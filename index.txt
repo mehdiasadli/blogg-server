@@ -1,0 +1,87 @@
+TABLES:
+- USERS
+- COLLECTIONS
+- BLOGS
+- COMMENTS
+
+USER SCHEMA:
+- firstName: string, required
+- lastName: string, required
+- username: string, required
+- password: string, required
+- roles: [enum(ADMIN, MEMBER)], default = [MEMBER]
+- image: { public_id: string, url: string }, default = ''
+- collections: [id], default = []
+- createdAt: date, required
+
+COLLECTION SCHEMA:
+- name: string, required
+- owner: [id] (ref => USERS)
+- blogs: [id] (ref => BLOGS), default = []
+- updatedAt: date, required
+- createdAt: date, required
+
+BLOG SCHEMA:
+- title: string, required
+- content: string, required
+- author: id (ref => USERS), required
+- collection: id (ref => USERS), required
+- comments: [id] (ref => COMMENTS), default = []
+<future> - likes: [{ user: id (ref => USERS), point: number }], default = []
+- updatedAt: date, required
+- createdAt: date, required
+
+COMMENT SCHEMA:
+- user: id (ref => USERS), required
+- content: string, required
+- blog: id (ref => BLOGS), required
+- createdAt: date, required
+
+// [] = not required
+API:
+
+/auth
+createUser - POST - req: firstName, lastName, username, password, [image]
+loginUser - POST - req: username, password
+
+/user
+getUsers - GET
+getUser - GET (/:userId)
+editUser - PATCH (/:userId) - req: [firstName], [lastName]
+deleteUser - DELETE (/:userId)
+addImage - PATCH (/:userId) - req: public_url, url
+deleteImage - DELETE (/:userId)
+
+/collection
+getCollections - GET (/:userId)
+getCollection - GET (/:collectionId)
+createCollection - POST - req: name
+editCollection - PATCH (/:collectionId) - req: name
+deleteCollection - DELETE (/:collectionId)
+
+/blog
+getBlogs - GET (/:collectionId)
+getBlog - GET (/:blogId)
+createBlog - POST - req: title, content
+editBlog - PATCH (/:blogId) - req: title, content
+deleteBlog - DELETE (/:blogId)
+
+/comment
+getComments - GET (/:blogId)
+addComment - POST - req: content
+editComment - PATCH (/:commentId) - req: content
+deleteComment - DELETE (/:commentId)
+
+AUTHORIZATION:
+use jwt (JsonWebToken)
+
+on __loginUser__ generate a jwt token => 'Bearer ...'
+
+-- middleware
+- public (available for everyone)
+createUser, loginUser
+- private (available for only members)
+getUsers, getUser, getCollections, getCollection, createCollection, getBlogs, getBlog, createBlog, getComments, addComment
+- memberPrivate (available for only owner members [Members whose id is the same with the id on the request {/:id}])
+editUser, deleteUser, editCollection, deleteCollection, editBlog, deleteBlog, editComment, deleteComment
+ADMIN can req. all
